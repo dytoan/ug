@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UGPhone 4H Manager</title>
+    <!-- FontAwesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0b0f19;
+            --card-bg: rgba(17, 24, 39, 0.7);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--success);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 10px;
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-animation 1.5s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            background: var(--card-bg);
+            padding: 6px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            overflow-x: auto;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .tab-content {
+            display: none;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--primary);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .result-box {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .result-box { grid-template-columns: 1fr; }
+        }
+
+        .res-column {
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .res-column h4 {
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .res-column.live h4 { color: var(--success); }
+        .res-column.die h4 { color: var(--danger); }
+
+        .res-column textarea {
+            min-height: 150px;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem;
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-pending { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+        .badge-processing { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .badge-success { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .badge-failed { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>UGPhone 4H Manager</h1>
+            <p>Hệ thống Quản lý, Kích hoạt & Check Live/Die UGPhone Cloud</p>
+            <div class="status-badge">
+                <span class="pulse"></span> Connected to Supabase
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('activate', this)"><i class="fa-solid fa-key"></i> Kích Hoạt</button>
+            <button class="tab-btn" onclick="switchTab('lookup', this)"><i class="fa-solid fa-magnifying-glass"></i> Tra Cứu</button>
+            <button class="tab-btn" onclick="switchTab('queue', this)"><i class="fa-solid fa-list-check"></i> Hàng Đợi</button>
+            <button class="tab-btn" onclick="switchTab('trial', this)"><i class="fa-solid fa-clock"></i> Check Trial 4H</button>
+            <button class="tab-btn" onclick="switchTab('check-ls', this)"><i class="fa-solid fa-vial"></i> Check LocalStorage</button>
+        </div>
+
+        <!-- Tab 1: Kích Hoạt -->
+        <div id="tab-activate" class="tab-content active">
+            <div class="form-group">
+                <label>Nhập Mã Kích Hoạt (Activation Code):</label>
+                <input type="text" id="act-code" placeholder="VD: UGP-XXXX-YYYY-ZZZZ">
+            </div>
+            <button class="btn" id="btn-activate" onclick="handleActivate()">Kích Hoạt Ngay</button>
+            <div id="act-result" style="margin-top: 15px;"></div>
+        </div>
+
+        <!-- Tab 2: Tra Cứu -->
+        <div id="tab-lookup" class="tab-content">
+            <div class="form-group">
+                <label>Nhập Code đã sử dụng trước đó:</label>
+                <input type="text" id="lookup-code" placeholder="Mã code đã kích hoạt...">
+            </div>
+            <button class="btn" onclick="handleLookup()"><i class="fa-solid fa-search"></i> Tìm Kiếm Dữ Liệu</button>
+            <div id="lookup-result" style="margin-top: 15px;"></div>
+        </div>
+
+        <!-- Tab 3: Hàng Đợi -->
+        <div id="tab-queue" class="tab-content">
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 10px;">
+                Tự động đồng bộ thời gian thực (Realtime) từ Supabase.
+            </p>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Request ID</th>
+                            <th>Mã Code</th>
+                            <th>Trạng thái</th>
+                            <th>Thời gian</th>
+                        </tr>
+                    </thead>
+                    <tbody id="queue-list">
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: var(--text-muted);">Đang tải dữ liệu...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab 4: Check Live Trial 4H -->
+        <div id="tab-trial" class="tab-content">
+            <div class="form-group">
+                <label>Nhập danh sách LocalStorage (Mỗi dòng 1 Data):</label>
+                <textarea id="trial-input" placeholder='{"token": "xyz...", "createdAt": 1700000000000}'></textarea>
+            </div>
+            <button class="btn" onclick="checkTrial4H()"><i class="fa-solid fa-play"></i> Bắt Đầu Kiểm Tra</button>
+
+            <div class="result-box">
+                <div class="res-column live">
+                    <h4><i class="fa-solid fa-circle-check"></i> LIVE (&le; 50 Phút) - <span id="count-trial-live">0</span></h4>
+                    <textarea id="trial-live-res" readonly></textarea>
+                </div>
+                <div class="res-column die">
+                    <h4><i class="fa-solid fa-circle-xmark"></i> DIE / Quá Hạn - <span id="count-trial-die">0</span></h4>
+                    <textarea id="trial-die-res" readonly></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 5: Check LocalStorage Expires -->
+        <div id="tab-check-ls" class="tab-content">
+            <div class="form-group">
+                <label>Nhập danh sách LocalStorage/JSON (Mỗi dòng 1 Data):</label>
+                <textarea id="ls-input" placeholder='Thả dữ liệu json hoặc _gcl_ls vào đây...'></textarea>
+            </div>
+            <button class="btn" onclick="checkLocalStorageExpires()"><i class="fa-solid fa-filter"></i> Kiểm Tra Hạn Sử Dụng</button>
+
+            <div class="result-box">
+                <div class="res-column live">
+                    <h4><i class="fa-solid fa-circle-check"></i> LIVE (Còn hạn) - <span id="count-ls-live">0</span></h4>
+                    <textarea id="ls-live-res" readonly></textarea>
+                </div>
+                <div class="res-column die">
+                    <h4><i class="fa-solid fa-circle-xmark"></i> DIE (Hết hạn/Lỗi) - <span id="count-ls-die">0</span></h4>
+                    <textarea id="ls-die-res" readonly></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Cấu hình Supabase kết nối theo thông tin từ Project dt1
+        const SUPABASE_URL = 'https://bepoejafyapyorvkrttu.supabase.co';
+        const SUPABASE_ANON_KEY = 'DÁN_PUB_KEY_CỦA_BẠN_VÀO_ĐÂY'; // <-- Thay khóa Publishable Key ở đây
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            element.classList.add('active');
+            document.getElementById('tab-' + tabId).classList.add('active');
+
+            if(tabId === 'queue') {
+                fetchQueue();
+            }
+        }
+
+        function maskCode(str) {
+            if(!str) return '••••';
+            if(str.length <= 6) return str.substring(0, 2) + '••••';
+            return str.substring(0, 3) + '••••' + str.substring(str.length - 3);
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleTimeString('vi-VN') + ' ' + date.toLocaleDateString('vi-VN');
+        }
+
+        let cooldown = false;
+        async function handleActivate() {
+            const input = document.getElementById('act-code');
+            const btn = document.getElementById('btn-activate');
+            const res = document.getElementById('act-result');
+            const codeVal = input.value.trim();
+
+            if(!codeVal) {
+                alert('Vui lòng nhập mã kích hoạt!');
+                return;
+            }
+
+            if(cooldown) {
+                alert('Vui lòng chờ hết thời gian đếm ngược.');
+                return;
+            }
+
+            cooldown = true;
+            btn.disabled = true;
+            res.innerHTML = `<p style="color: var(--primary);"><i class="fa-solid fa-spinner fa-spin"></i> Đang gửi yêu cầu kích hoạt lên Supabase...</p>`;
+
+            try {
+                const { data, error } = await supabase
+                    .from('activations')
+                    .insert([{ code: codeVal, status: 'pending' }])
+                    .select();
+
+                if (error) throw error;
+
+                res.innerHTML = `<div style="padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 8px; color: var(--success);">
+                    <i class="fa-solid fa-check-circle"></i> Đã gửi yêu cầu thành công! ID: <b>REQ_${data[0].id.substring(0,8)}</b>. Xem trạng thái tại tab Hàng Đợi.
+                </div>`;
+                input.value = '';
+            } catch (err) {
+                res.innerHTML = `<div style="padding: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); border-radius: 8px; color: var(--danger);">
+                    <i class="fa-solid fa-exclamation-circle"></i> Lỗi: ${err.message}
+                </div>`;
+            }
+
+            let seconds = 10;
+            const timer = setInterval(() => {
+                btn.innerText = `Chờ (${seconds}s)...`;
+                seconds--;
+                if(seconds < 0) {
+                    clearInterval(timer);
+                    btn.disabled = false;
+                    btn.innerText = 'Kích Hoạt Ngay';
+                    cooldown = false;
+                }
+            }, 1000);
+        }
+
+        async function handleLookup() {
+            const code = document.getElementById('lookup-code').value.trim();
+            const res = document.getElementById('lookup-result');
+
+            if(!code) {
+                alert('Vui lòng nhập code!');
+                return;
+            }
+
+            res.innerHTML = `<p style="color: var(--primary);"><i class="fa-solid fa-spinner fa-spin"></i> Đang tra cứu dữ liệu...</p>`;
+
+            try {
+                const { data, error } = await supabase
+                    .from('activations')
+                    .select('*')
+                    .eq('code', code)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    res.innerHTML = `<div style="padding: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); border-radius: 8px; color: var(--danger);">
+                        Không tìm thấy dữ liệu cho mã kích hoạt này!
+                    </div>`;
+                    return;
+                }
+
+                const item = data[0];
+                let outputJson = item.result_data ? JSON.stringify(item.result_data, null, 2) : 'Chưa có dữ liệu LocalStorage (Trạng thái: ' + item.status + ')';
+
+                res.innerHTML = `<div style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
+                    <p style="margin-bottom: 8px;"><b>Trạng thái:</b> <span class="badge badge-${item.status}">${item.status.toUpperCase()}</span></p>
+                    <p style="margin-bottom: 8px;"><b>Thời gian:</b> ${formatDate(item.created_at)}</p>
+                    <label style="margin-top: 10px;"><b>Dữ liệu LocalStorage:</b></label>
+                    <textarea readonly style="font-family: monospace; min-height: 120px;">${outputJson}</textarea>
+                </div>`;
+            } catch (err) {
+                res.innerHTML = `<div style="padding: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); border-radius: 8px; color: var(--danger);">
+                    Lỗi khi truy vấn: ${err.message}
+                </div>`;
+            }
+        }
+
+        async function fetchQueue() {
+            const tbody = document.getElementById('queue-list');
+            
+            try {
+                const { data, error } = await supabase
+                    .from('activations')
+                    .select('id, code, status, created_at')
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Chưa có dữ liệu trong hàng đợi.</td></tr>`;
+                    return;
+                }
+
+                renderQueueTable(data);
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--danger);">Lỗi tải hàng đợi: ${err.message}</td></tr>`;
+            }
+        }
+
+        function renderQueueTable(data) {
+            const tbody = document.getElementById('queue-list');
+            tbody.innerHTML = data.map(item => {
+                let badgeClass = 'badge-pending';
+                if(item.status === 'success') badgeClass = 'badge-success';
+                if(item.status === 'processing') badgeClass = 'badge-processing';
+                if(item.status === 'failed') badgeClass = 'badge-failed';
+
+                return `
+                    <tr>
+                        <td>REQ_${item.id.substring(0, 8)}</td>
+                        <td>${maskCode(item.code)}</td>
+                        <td><span class="badge ${badgeClass}">${item.status}</span></td>
+                        <td>${formatDate(item.created_at)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        supabase
+            .channel('public:activations')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'activations' }, () => {
+                if(document.getElementById('tab-queue').classList.contains('active')) {
+                    fetchQueue();
+                }
+            })
+            .subscribe();
+
+        function checkTrial4H() {
+            const raw = document.getElementById('trial-input').value.trim();
+            if(!raw) return alert('Vui lòng nhập dữ liệu!');
+
+            const lines = raw.split('\n');
+            let live = [], die = [];
+            const now = Date.now();
+
+            lines.forEach(line => {
+                const str = line.trim();
+                if(!str) return;
+
+                try {
+                    const obj = JSON.parse(str);
+                    const createdAt = obj.createdAt || obj.created_at || obj.timestamp;
+                    
+                    if(createdAt) {
+                        const ageInMinutes = (now - Number(createdAt)) / (1000 * 60);
+                        if(ageInMinutes >= 0 && ageInMinutes <= 50) {
+                            live.push(str);
+                        } else {
+                            die.push(str);
+                        }
+                    } else {
+                        die.push(str);
+                    }
+                } catch (e) {
+                    die.push(str);
+                }
+            });
+
+            document.getElementById('trial-live-res').value = live.join('\n');
+            document.getElementById('trial-die-res').value = die.join('\n');
+            document.getElementById('count-trial-live').innerText = live.length;
+            document.getElementById('count-trial-die').innerText = die.length;
+        }
+
+        function checkLocalStorageExpires() {
+            const raw = document.getElementById('ls-input').value.trim();
+            if(!raw) return alert('Vui lòng nhập dữ liệu!');
+
+            const lines = raw.split('\n');
+            let live = [], die = [];
+            const now = Date.now();
+
+            lines.forEach(line => {
+                const str = line.trim();
+                if(!str) return;
+
+                try {
+                    const obj = JSON.parse(str);
+                    let expires = obj.expires;
+
+                    if(!expires && obj._gcl_ls) {
+                        const parsedGcl = typeof obj._gcl_ls === 'string' ? JSON.parse(obj._gcl_ls) : obj._gcl_ls;
+                        expires = parsedGcl.expires;
+                    }
+
+                    if(expires) {
+                        if(Number(expires) > now) {
+                            live.push(str);
+                        } else {
+                            die.push(str);
+                        }
+                    } else {
+                        die.push(str);
+                    }
+                } catch (e) {
+                    die.push(str);
+                }
+            });
+
+            document.getElementById('ls-live-res').value = live.join('\n');
+            document.getElementById('ls-die-res').value = die.join('\n');
+            document.getElementById('count-ls-live').innerText = live.length;
+            document.getElementById('count-ls-die').innerText = die.length;
+        }
+    </script>
+</body>
+</html>
